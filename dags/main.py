@@ -13,7 +13,7 @@ if __name__ == "__main__":
 
     # Catalog: look things up, and save a copy for reference
 
-    catalog = get_indicator_catalog(session, "Malaria")
+    catalog = get_indicator_catalog(session, "life expectancy")
     for item in catalog[:5]:
         print(item["IndicatorCode"], "|", item["IndicatorName"])
 
