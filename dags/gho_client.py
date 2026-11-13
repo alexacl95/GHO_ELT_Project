@@ -197,3 +197,15 @@ def save_raw_data(
     log.info("Saved %s indicators to %s", len(manifest_items), run_dir)
     return run_dir
 
+def get_countries(session: requests.Session) -> list[dict]:
+    """Country dimension: ISO3 code, name, and WHO region."""
+    rows, _ = fetch_rows(session, "DIMENSION/COUNTRY/DimensionValues")
+    return [
+        {
+            "country_code": r["Code"],
+            "country_name": r["Title"],
+            "who_region_code": r.get("ParentCode"),
+            "who_region_name": r.get("ParentTitle"),
+        }
+        for r in rows
+    ]
