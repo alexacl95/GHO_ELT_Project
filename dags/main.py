@@ -1,6 +1,6 @@
 import sys
 
-from gho_client import (_atomic_write_json,
+from dags.api.gho_client import (_atomic_write_json,
                         build_session,
                         get_countries,
                         get_indicator_catalog,

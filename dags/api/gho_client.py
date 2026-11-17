@@ -198,7 +198,11 @@ def save_raw_data(
     return run_dir
 
 def get_countries(session: requests.Session) -> list[dict]:
-    """Country dimension: ISO3 code, name, and WHO region."""
+    """
+    Description: Fetch the country dimension from the GHO API, including ISO3 code, name, and WHO region.
+    Input: session: requests.Session object
+    Output: List of dictionaries with 'country_code', 'country_name', 'who_region_code', and 'who_region_name' keys
+    """
     rows, _ = fetch_rows(session, "DIMENSION/COUNTRY/DimensionValues")
     return [
         {
