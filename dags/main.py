@@ -7,16 +7,19 @@ from api.gho_client import (_atomic_write_json,
                         download_indicators,
                         save_raw_data)
 
-from pathlib import Path
-import logging
-
-import json, glob
-
 from datatransformation.gho_transform import (build_spark,
                                                    clean,
                                                    read_countries,
                                                    read_raw,
                                                    write_parquet)
+from validate.validate import validate
+
+from pathlib import Path
+import logging
+
+import json, glob
+
+
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -27,7 +30,7 @@ if __name__ == "__main__":
     session = build_session()
 
     # Catalog: look things up, and save a copy for reference
-    catalog = get_indicator_catalog(session, "life expectancy")
+    catalog = get_indicator_catalog(session, "Malaria")
     for item in catalog[:5]:
         print(item["IndicatorCode"], "|", item["IndicatorName"])
 
@@ -46,7 +49,7 @@ if __name__ == "__main__":
 
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    run_dir = Path('data/raw/gho_2026-11-13')          # e.g. data/raw/gho_2026-11-13
+    run_dir = Path('data/raw/gho_2026-11-18')          # e.g. data/raw/gho_2026-11-13
     out_dir = Path("data/processed/gho_indicators")
 
     spark = build_spark()
@@ -55,6 +58,9 @@ if __name__ == "__main__":
         write_parquet(cleaned, out_dir)
     finally:
         spark.stop()
+    
+    #Validate the processed dataset
+    validate(out_dir)
     
 
 
