@@ -84,7 +84,7 @@ def fetch_rows(
 
     return rows, first_url
 
-def get_indicator_catalog(session: requests.Session, keyword: str | None = None):
+def get_indicator_catalog(session: requests.Session, keyword: str | None = None) -> list[dict]:
     """
     Description: Get the catalog of indicators from the GHO API, optionally filtered by a keyword.
     Input:
@@ -132,11 +132,11 @@ def download_indicators(
 
     return results, failures
 
-def _atomic_write_json(payload: dict, target: Path) -> None:
+def _atomic_write_json(payload: dict | list, target: Path) -> None:
     """
     Description: Write JSON to a temp file, then rename, so no half-written file is ever visible.
     Input:
-        1. payload: Dictionary to be written as JSON
+        1. payload: Dictionary or list to be written as JSON
         2. target: Path object representing the target file
     """
     fd, tmp_name = tempfile.mkstemp(dir=target.parent, suffix=".tmp")
@@ -148,6 +148,27 @@ def _atomic_write_json(payload: dict, target: Path) -> None:
         Path(tmp_name).unlink(missing_ok=True)
         raise
 
+def save_reference_data(
+    run_dir: Path,
+    catalog: list[dict],
+    countries: list[dict],
+) -> None:
+    """Save the two dimension sources next to the raw indicator files.
+
+    The "_" prefix keeps them out of the indicator glob ([!_]*.json) that Spark uses.
+    """
+    if not catalog:
+        raise ValueError("Catalog is empty: refusing to overwrite _catalog.json")
+    if not countries:
+        raise ValueError("Country list is empty: refusing to overwrite _countries.json")
+
+    run_dir.mkdir(parents=True, exist_ok=True)
+    # Plain list: matches read_catalog() in transform.py
+    _atomic_write_json(catalog, run_dir / "_catalog.json")
+    # Wrapped in {"value": [...]}: matches COUNTRY_SCHEMA in transform.py
+    _atomic_write_json({"value": countries}, run_dir / "_countries.json")
+
+    log.info("Saved %s indicators and %s countries to %s", len(catalog), len(countries), run_dir)
 
 def save_raw_data(
     results: dict[str, dict],

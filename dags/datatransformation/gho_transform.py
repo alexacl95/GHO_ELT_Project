@@ -47,6 +47,10 @@ COUNTRY_SCHEMA = StructType([
     ]))),
 ])
 
+CATALOG_SCHEMA = StructType([
+    StructField("IndicatorCode", StringType()),
+    StructField("IndicatorName", StringType()),
+])
 
 def build_spark() -> SparkSession:
     """
