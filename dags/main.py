@@ -26,7 +26,7 @@ RAW_DIR = Path("data/raw")
 if __name__ == "__main__":
     session = build_session()
 
-    # Catalog: look things up, and save a copy for reference
+    """# Catalog: look things up, and save a copy for reference
     catalog = get_indicator_catalog(session, "life expectancy")
     for item in catalog[:5]:
         print(item["IndicatorCode"], "|", item["IndicatorName"])
@@ -60,6 +60,6 @@ if __name__ == "__main__":
         spark.stop()
     
     #Validate the processed dataset
-    validate(Path("data/processed/gho_indicators"))
+    validate(Path("data/processed/gho_indicators"))"""
     staging_table(Path("data/raw/gho_2026-11-20"))
     core_table()

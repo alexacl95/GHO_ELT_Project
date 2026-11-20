@@ -47,8 +47,8 @@ def get_conn_cursor():
     """
     conn = psycopg.connect(
         host=os.environ["POSTGRES_CONN_HOST"], port=os.environ["POSTGRES_CONN_PORT"],
-        dbname=os.environ["ELT_DATABASE_NAME"], user=os.environ["POSTGRES_CONN_USERNAME"],
-        password=os.environ["POSTGRES_CONN_PASSWORD"],
+        dbname=os.environ["ELT_DATABASE_NAME"], user=os.environ["ELT_DATABASE_USERNAME"],
+        password=os.environ["ELT_DATABASE_PASSWORD"],
     )
     cur = conn.cursor(row_factory=dict_row)
     return conn, cur
