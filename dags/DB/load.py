@@ -36,14 +36,11 @@ FACT_COLS = [
 ]
 
 
-# ======================================================================
-# data_utils: connections and DDL
-# ======================================================================
 def get_conn_cursor():
-    """Return (conn, cur) with a dict_row cursor, like the YouTube project.
-
-    Inside Airflow, replace the body with your PostgresHook version
-    (PostgresHook(postgres_conn_id=...).get_conn()). Nothing else changes.
+    """
+    Description: Establish a connection to the PostgreSQL database and return a cursor with dict_row factory.
+    Output: Tuple containing the connection and cursor objects.
+    Note: This function uses environment variables for database connection parameters.
     """
     conn = psycopg.connect(
         host=os.environ["POSTGRES_CONN_HOST"], port=os.environ["POSTGRES_CONN_PORT"],
@@ -55,15 +52,29 @@ def get_conn_cursor():
 
 
 def close_conn_cursor(conn, cur) -> None:
+    """
+    Description: Close the cursor and connection to the PostgreSQL database.
+    Input:
+        1. conn: Connection object to the PostgreSQL database.
+        2. cur: Cursor object associated with the connection.
+    """
     cur.close()
     conn.close()
 
 def create_schema_and_tables(cur) -> None:
-    """Create both schemas and all tables from sql/schema.sql (idempotent)."""
+    """
+    Description: Create both schemas and all tables from sql/schema.sql (idempotent).
+    Input: cur: Cursor object associated with the connection.
+    """
     cur.execute(SCHEMA_FILE.read_text(encoding="utf-8"))
 
 def read_catalog(spark: SparkSession, run_dir: Path) -> DataFrame:
-    """Read _catalog.json (a plain JSON list) into the indicator dimension."""
+    """description: Read _catalog.json (a plain JSON list) into the indicator dimension.
+    input: 
+        1. spark: SparkSession object.
+        2. run_dir: Path object representing the run directory.
+    output: DataFrame containing the indicator catalog with normalized indicator codes and names.
+    """
     return (
         spark.read.schema(CATALOG_SCHEMA)
         .option("multiLine", True)
@@ -77,6 +88,13 @@ def read_catalog(spark: SparkSession, run_dir: Path) -> DataFrame:
     )
 
 def read_countries(spark: SparkSession, run_dir: Path) -> DataFrame:
+    """
+    Description: Read _countries.json (a wrapped JSON list) into the country dimension.
+    Input:
+        1. spark: SparkSession object.
+        2. run_dir: Path object representing the run directory.
+    Output: DataFrame containing the country information.
+    """
     raw = (
         spark.read.schema(COUNTRY_SCHEMA)
         .option("multiLine", True)
@@ -97,6 +115,12 @@ def write_dimensions(countries: DataFrame, catalog: DataFrame, out_root: Path) -
 # data_loading: read the small JSON side files of a run
 # ======================================================================
 def _read_json(path: Path):
+    """
+    Description: Read a JSON file and return its content as a Python object.
+    Input:
+        1. path: Path object representing the JSON file to be read.
+    Output: Python object (dict or list) containing the parsed JSON data.
+    """
     try:
         log.info("Processing file: %s", path)
         return json.loads(path.read_text(encoding="utf-8"))
@@ -109,7 +133,10 @@ def _read_json(path: Path):
 
 
 def load_data(run_dir: Path) -> tuple[list[dict], list[dict]]:
-    """Return (countries, catalog) saved in the raw run folder."""
+    """Description: Return (countries, catalog) saved in the raw run folder.
+    input: run_dir: Path object representing the run directory.
+    output: Tuple containing two lists of dictionaries: countries and catalog."""
+
     countries = _read_json(run_dir / "_countries.json")["value"]
     catalog = _read_json(run_dir / "_catalog.json")
     if isinstance(catalog, dict):          # accept {"catalog": [...]} or a plain list
@@ -121,9 +148,10 @@ def load_data(run_dir: Path) -> tuple[list[dict], list[dict]]:
 # data_modification: staging writes (COPY, not row-by-row INSERT)
 # ======================================================================
 def truncate_staging(cur) -> None:
-    """Staging mirrors the latest snapshot, so empty it before reloading.
-
+    """
+    Description: Empty the staging tables before reloading. 
     TRUNCATE is transactional in Postgres: if the load fails, the old data stays.
+    input: cur: Cursor object associated with the connection.
     """
     cur.execute(
         "TRUNCATE staging.gho_values, staging.gho_countries, staging.gho_indicators"
@@ -131,6 +159,13 @@ def truncate_staging(cur) -> None:
 
 
 def copy_dimensions(cur, countries: list[dict], catalog: list[dict]) -> None:
+    """
+    Description: Stream the country and indicator dimensions into staging tables using COPY.
+    Input:
+        1. cur: Cursor object associated with the connection.
+        2. countries: List of dictionaries containing country information.
+        3. catalog: List of dictionaries containing indicator information.
+        Output: None. The function performs the COPY operation to load data into the staging tables."""
     with cur.copy(
         "COPY staging.gho_countries "
         "(country_code, country_name, who_region_code, who_region_name) FROM STDIN"
@@ -149,7 +184,13 @@ def copy_dimensions(cur, countries: list[dict], catalog: list[dict]) -> None:
 
 
 def copy_facts(cur, parquet_dir: str) -> int:
-    """Stream Parquet batches into staging.gho_values with COPY. Returns row count."""
+    """
+    Description: Stream Parquet batches into staging.gho_values with COPY. 
+    input:
+        1. cur: Cursor object associated with the connection.
+        2. parquet_dir: String representing the directory containing Parquet files. 
+    output: row count.
+    """
     dataset = ds.dataset(parquet_dir, format="parquet", partitioning="hive")
     total = 0
     copy_sql = f"COPY staging.gho_values ({', '.join(FACT_COLS)}) FROM STDIN"
@@ -235,7 +276,8 @@ WHERE NOT EXISTS (SELECT 1 FROM staging.gho_indicators s WHERE s.indicator_code 
 
 
 def build_core(cur) -> dict[str, int]:
-    """Upsert core from staging, then delete rows that disappeared. Returns row counts."""
+    """
+    Description: Upsert core from staging, then delete rows that disappeared. Returns row counts."""
     counts: dict[str, int] = {}
     for name, sql in [
         ("indicators_upserted", UPSERT_CORE_INDICATORS),
@@ -254,7 +296,7 @@ def build_core(cur) -> dict[str, int]:
 # dwh: the two "tasks" (plain functions now, @task in Airflow later)
 # ======================================================================
 def staging_table(run_dir: Path) -> int:
-    """Raw run + Parquet -> staging. One transaction: all or nothing.
+    """Description: Raw run + Parquet -> staging. One transaction: all or nothing.
 
     Steps: 1 connect, 2 read side files, 3 create schemas/tables,
            4 truncate staging, 5 COPY dimensions and facts, 6 commit.
@@ -281,7 +323,7 @@ def staging_table(run_dir: Path) -> int:
 
 
 def core_table() -> dict[str, int]:
-    """staging -> core: transform, upsert, delete stale. One transaction."""
+    """Description: staging -> core: transform, upsert, delete stale. One transaction."""
     conn, cur = None, None
     try:
         conn, cur = get_conn_cursor()
