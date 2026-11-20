@@ -19,10 +19,8 @@ EXPECTED = {
 
 def validate(path: str = "data/processed/gho_indicators") -> None:
     """Check schema, row counts and unmatched country codes of the processed facts."""
-    dataset = ds.dataset(path, format="parquet", partitioning="hive")
-    
+    dataset = ds.dataset(path, format="parquet", partitioning="hive")    
     schema = dataset.schema
-    print(schema.names)
     problems = []
     for name, expected in EXPECTED.items():
         if name not in schema.names:

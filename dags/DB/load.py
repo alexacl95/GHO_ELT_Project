@@ -16,12 +16,17 @@ from psycopg.rows import dict_row
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
-    ArrayType, DoubleType, LongType, StringType, StructField, StructType,
-)
+                                ArrayType,
+                                DoubleType,
+                                LongType, 
+                                StringType, 
+                                StructField, 
+                                StructType,
+                                )
 
 log = logging.getLogger(__name__)
 
-SCHEMA_FILE = Path(__file__).resolve().parent.parent / "sql" / "schema.sql"
+SCHEMA_FILE = Path(__file__).resolve().parent.parent / "DB" / "schema.sql"
 PROCESSED_DIR = "data/processed/gho_indicators"
 BATCH_ROWS = 50_000
 
@@ -41,9 +46,9 @@ def get_conn_cursor():
     (PostgresHook(postgres_conn_id=...).get_conn()). Nothing else changes.
     """
     conn = psycopg.connect(
-        host=os.environ["PG_HOST"], port=os.environ["PG_PORT"],
-        dbname=os.environ["PG_DB"], user=os.environ["PG_USER"],
-        password=os.environ["PG_PASSWORD"],
+        host=os.environ["POSTGRES_CONN_HOST"], port=os.environ["POSTGRES_CONN_PORT"],
+        dbname=os.environ["ELT_DATABASE_NAME"], user=os.environ["POSTGRES_CONN_USERNAME"],
+        password=os.environ["POSTGRES_CONN_PASSWORD"],
     )
     cur = conn.cursor(row_factory=dict_row)
     return conn, cur

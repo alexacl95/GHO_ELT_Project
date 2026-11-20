@@ -6,7 +6,7 @@ from api.gho_client import (_atomic_write_json,
                             download_indicators,
                             save_raw_data, save_reference_data)
 
-from DB.load import read_catalog, write_dimensions
+from DB.load import core_table, read_catalog, staging_table, write_dimensions
 from datatransformation.gho_transform import (build_spark,
                                             clean,
                                             read_countries,
@@ -57,7 +57,9 @@ if __name__ == "__main__":
         cleaned = clean(read_raw(spark, run_dir), countries)
         write_parquet(cleaned, out_dir)   # facts: path unchanged
     finally:
-        spark.stop() 
+        spark.stop()
     
     #Validate the processed dataset
-    validate(Path("data/processed/gho_indicators/gho_indicators"))
+    validate(Path("data/processed/gho_indicators"))
+    staging_table(Path("data/raw/gho_2026-11-20"))
+    core_table()
