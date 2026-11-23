@@ -8,7 +8,7 @@ import os
 import sys
 from pathlib import Path
 
-from datatransformation.gho_transform import CATALOG_SCHEMA
+from dags.datatransformation.gho_transform import CATALOG_SCHEMA, COUNTRY_SCHEMA
 import psycopg
 import pyarrow.dataset as ds
 from psycopg.rows import dict_row

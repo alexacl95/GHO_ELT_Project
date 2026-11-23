@@ -2,3 +2,4 @@ pyspark==3.4.1
 requests
 pandas<3.0.0
 psycopg
+pytest
