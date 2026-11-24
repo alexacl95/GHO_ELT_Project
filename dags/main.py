@@ -1,23 +1,30 @@
-import sys
-from api.gho_client import (_atomic_write_json,
-                            build_session,
-                            get_countries,
-                            get_indicator_catalog,
-                            download_indicators,
-                            save_raw_data, save_reference_data)
-
-from DB.load import core_table, read_catalog, staging_table, write_dimensions
-from datatransformation.gho_transform import (build_spark,
-                                            clean,
-                                            read_countries,
-                                            read_raw,
-                                            write_parquet)
-from validate.validate import validate
-
-from pathlib import Path
+import glob
+import json
 import logging
+import sys
+from pathlib import Path
 
-import json, glob
+# Add parent directory to sys.path so 'dags' module can be imported
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from dags.api.gho_client import (
+    _atomic_write_json,
+    build_session,
+    download_indicators,
+    get_countries,
+    get_indicator_catalog,
+    save_raw_data,
+    save_reference_data,
+)
+from dags.datatransformation.gho_transform import (
+    build_spark,
+    clean,
+    read_countries,
+    read_raw,
+    write_parquet,
+)
+from dags.db.load import core_table, read_catalog, staging_table, write_dimensions
+from dags.validate.validate import validate
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 RAW_DIR = Path("data/raw")
@@ -26,7 +33,7 @@ RAW_DIR = Path("data/raw")
 if __name__ == "__main__":
     session = build_session()
 
-    """# Catalog: look things up, and save a copy for reference
+    # Catalog: look things up, and save a copy for reference
     catalog = get_indicator_catalog(session, "life expectancy")
     for item in catalog[:5]:
         print(item["IndicatorCode"], "|", item["IndicatorName"])
@@ -42,10 +49,11 @@ if __name__ == "__main__":
     _atomic_write_json({"value": countries}, run_dir / "_countries.json")
 
     f = glob.glob("data/raw/gho_*/WHOSIS_000001_*.json")[0]
-    print(json.load(open(f))["value"][0])
+    with open(f) as file:
+        print(json.load(file)["value"][0])
     save_reference_data(run_dir, catalog, countries)
 
-    #logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
     out_dir = Path("data/processed/gho_indicators/")
 
     spark = build_spark()
@@ -58,8 +66,8 @@ if __name__ == "__main__":
         write_parquet(cleaned, out_dir)   # facts: path unchanged
     finally:
         spark.stop()
-    
-    #Validate the processed dataset
-    validate(Path("data/processed/gho_indicators"))"""
+
+    # Validate the processed dataset
+    validate(Path("data/processed/gho_indicators"))
     staging_table(Path("data/raw/gho_2026-11-20"))
     core_table()

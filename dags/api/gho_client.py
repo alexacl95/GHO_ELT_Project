@@ -5,7 +5,7 @@ import logging
 import os
 import tempfile
 import time
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from urllib.parse import quote, urlencode
 
@@ -189,7 +189,7 @@ def save_raw_data(
     stamp = run_date.isoformat()
     run_dir = out_dir / f"gho_{stamp}"
     run_dir.mkdir(parents=True, exist_ok=True)
-    extracted_at = datetime.now(timezone.utc).isoformat()
+    extracted_at = datetime.now(UTC).isoformat()
 
     manifest_items = []
     for code, data in results.items():

@@ -5,28 +5,19 @@ from __future__ import annotations
 import json
 import logging
 import os
-import sys
 from pathlib import Path
 
-from dags.datatransformation.gho_transform import CATALOG_SCHEMA, COUNTRY_SCHEMA
 import psycopg
 import pyarrow.dataset as ds
 from psycopg.rows import dict_row
-
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
-from pyspark.sql.types import (
-                                ArrayType,
-                                DoubleType,
-                                LongType, 
-                                StringType, 
-                                StructField, 
-                                StructType,
-                                )
+
+from dags.datatransformation.gho_transform import CATALOG_SCHEMA, COUNTRY_SCHEMA
 
 log = logging.getLogger(__name__)
 
-SCHEMA_FILE = Path(__file__).resolve().parent.parent / "DB" / "schema.sql"
+SCHEMA_FILE = Path(__file__).resolve().parent.parent / "db" / "schema.sql"
 PROCESSED_DIR = "data/processed/gho_indicators"
 BATCH_ROWS = 50_000
 

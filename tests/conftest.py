@@ -1,9 +1,13 @@
 import sys
+from pathlib import Path
+
 import pytest
 from pyspark.sql import SparkSession
 
 # Add project root to Python path so dags module can be imported
-sys.path.insert(0, "/opt/airflow")
+# Works from any directory (tests/, ., /opt/airflow, etc.)
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 
 @pytest.fixture(scope="session")

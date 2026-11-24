@@ -1,5 +1,12 @@
+from pyspark.sql.types import (
+    DoubleType,
+    IntegerType,
+    StringType,
+    StructField,
+    StructType,
+)
+
 from dags.datatransformation.gho_transform import clean
-from pyspark.sql.types import StructType, StructField, IntegerType, StringType, DoubleType
 
 
 def _facts(spark, rows):

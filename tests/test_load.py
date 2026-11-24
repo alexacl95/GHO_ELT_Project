@@ -1,7 +1,8 @@
-from pyspark import core
 
 import pytest
-from dags.DB.load import build_core, create_schema_and_tables, get_conn_cursor
+
+from dags.db.load import build_core, create_schema_and_tables, get_conn_cursor
+
 pytestmark = pytest.mark.integration
 
 
